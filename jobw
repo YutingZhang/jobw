@@ -3,7 +3,7 @@
 # functions
 
 function show_help() {
-  echo "USAGE: $0 [opts] cmd [cmd_args]"
+  echo "USAGE: `basename $0` [opts] cmd [cmd_args]"
   echo "ARGS: "
   echo "  -a email_addr     send email to email_addr (JOBW_EMAIL=email_addr)"
   echo "  -N                do not attach full log in email (JOBW_LOG_IN_EMAIL=0)"
