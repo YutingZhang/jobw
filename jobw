@@ -6,6 +6,7 @@ function show_help() {
   echo "USAGE: $0 [opts] cmd [cmd_args]"
   echo "ARGS: "
   echo "  -a email_addr     send email to email_addr (JOBW_EMAIL=email_addr)"
+  echo "  -N                do not attach full log in email (JOBW_LOG_IN_EMAIL=0)"
   echo "  -u                do not send email (unset JOBW_EMAIL)"
   echo "  -s job_subject    job subject (JOBW_SUBJECT=job_subject)"
   echo "  -o log_file       log (JOBW_LOG_FILE=log_file)"
@@ -61,18 +62,24 @@ fi
 if [ -z "$JOBW_LINES" ]; then
     JOBW_LINES='10'
 fi
+if [ -z "$JOBW_LOG_IN_EMAIL" ]; then
+    JOBW_LOG_IN_EMAIL=1
+fi
 
 pushd `dirname $0` > /dev/null ; SCRIPT_DIR=`pwd`; popd > /dev/null
 
 JOBW_SHOW_HELP=0
 
-while getopts "a:us:o:wn:b:c:fl:m:h" opt; do
+while getopts "a:Nus:o:wnb:c:fl:m:h" opt; do
 case $opt in
   h)
       JOBW_SHOW_HELP=1
       ;;
   a)    # email to the spefic address
       JOBW_EMAIL="$OPTARG"
+      ;;
+  N)
+      JOBW_LOG_IN_EMAIL=0
       ;;
   u)    # do not send email
       unset JOBW_EMAIL
@@ -164,6 +171,7 @@ echo $JOBW_TMP_FILE
 mkfifo $JOBW_TMP_FILE.log
 mkfifo $JOBW_TMP_FILE.log_trunc
 mkfifo $JOBW_TMP_FILE.abs
+mkfifo $JOBW_TMP_FILE.abs_full
 
 
 if [ ! -z "$JOBW_LOG_FILE" ]; then
@@ -232,8 +240,13 @@ if [ ! -z "$JOBW_LOG_FILE" ]; then
 fi
 
 if [ ! -z "$JOBW_EMAIL" ]; then
-    { echo "$JOBW_ABS" ; cat $JOBW_TMP_FILE.log_txt ; } | mail -s "[$JOBW_SUBJECT] $1" "$JOBW_EMAIL"
+    if [ "$JOBW_LOG_IN_EMAIL" -gt "0" ]; then
+        { echo "$JOBW_ABS" ; cat $JOBW_TMP_FILE.log_txt ; } > $JOBW_TMP_FILE.abs_full &
+    else
+        echo "$JOBW_ABS"  > $JOBW_TMP_FILE.abs_full &
+    fi
 fi
+cat $JOBW_TMP_FILE.abs_full | mail -s "[$JOBW_SUBJECT] $1" "$JOBW_EMAIL"
 
 echo
 echo "======== JOBW: SUMMARY ======"
