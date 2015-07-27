@@ -1,0 +1,10 @@
+#!/bin/bash
+
+printf 'Hostname:\t%s\n' "`hostname`"
+printf 'User:\t%s\n' "`whoami`"
+if [ ! -z "$STY" ]; then
+    printf 'Screen:\t%s\n' "$STY"
+fi
+printf 'PWD:\t%s\n' "`pwd`"
+
+

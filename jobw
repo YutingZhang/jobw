@@ -1,0 +1,217 @@
+#!/bin/bash
+
+# functions
+function show_time () {
+    num=$1
+    min=0
+    hour=0
+    day=0
+    if((num>59));then
+        ((sec=num%60))
+        ((num=num/60))
+        if((num>59));then
+            ((min=num%60))
+            ((num=num/60))
+            if((num>23));then
+                ((hour=num%24))
+                ((day=num/24))
+            else
+                ((hour=num))
+            fi
+        else
+            ((min=num))
+        fi
+    else
+        ((sec=num))
+    fi
+    echo "$day"d "$hour"h "$min"m "$sec"s
+}
+
+# main
+
+if [ -z "$JOBW_SUBJECT" ]; then
+    JOBW_SUBJECT='jobw'
+fi
+JOBW_OVERWRITE=0
+if [ -z "$JOBW_LOG_BYTE" ]; then
+    JOBW_LOG_BYTE='5120'
+fi
+if [ -z "$JOBW_LINES" ]; then
+    JOBW_LINES='10'
+fi
+
+pushd `dirname $0` > /dev/null ; SCRIPT_DIR=`pwd`; popd > /dev/null
+
+while getopts "a:us:o:wn:b:c:fl:m:h" opt; do
+
+JOBW_SHOW_HELP=0
+case $opt in
+  h)
+      JOBW_SHOW_HELP=1
+      ;;
+  a)    # email to the spefic address
+      JOBW_EMAIL="$OPTARG"
+      ;;
+  u)    # do not send email
+      unset JOBW_EMAIL
+      ;;
+  s)
+      JOBW_SUBJECT="$OPTARG"
+      ;;
+  o)
+      JOBW_LOG_FILE="$OPTARG"
+      ;;
+  w)
+      JOBW_OVERWRITE=1
+      ;;
+  n)
+      unset JOBW_LOG_FILE
+      ;;
+  b)
+      JOBW_LOG_BYTE=`expr "$OPTARG" "*" "512"`
+      ;;
+  c)
+      JOBW_LOG_BYTE=`expr "$OPTARG" "+" "0"`
+      ;;
+  f)
+      JOBW_LOG_BYTE='inf'
+      ;;
+  l)
+      JOBW_LINES=`expr "$OPTARG" "+" "0"`
+      ;;
+  m)
+      JOBW_MORE="$OPTARG"
+      ;;
+  \?)
+    echo "Invalid option: $OPTARG" >&2
+    exit 1
+    ;;
+esac
+done
+if [ ! "$?" -eq "0" ]; then exit 1; fi
+
+shift $((OPTIND-1))
+[ "$1" = "--" ] && shift
+
+if [ -z "$1" ]; then
+    JOBW_SHOW_HELP=1
+fi
+
+if [ $JOBW_SHOW_HELP -gt 0 ]; then
+  echo "USAGE: $0 [opts] cmd [cmd_args]"
+  echo "ARGS: "
+  echo "  -a email_addr     send email to email_addr (JOBW_EMAIL=email_addr)"
+  echo "  -u                do not send email (unset JOBW_EMAIL)"
+  echo "  -s job_subject    job subject (JOBW_SUBJECT=job_subject)"
+  echo "  -o log_file       log (JOBW_LOG_FILE=log_file)"
+  echo "  -w                overwrite the logfile instead of appending"
+  echo "  -n                do not write log to a file (unset JOB_LOG_FILE)"
+  echo "  -b num_block      head and tail the log output by 512*num_block bytes"
+  echo "                      (JOBW_LOG_BYTE=num_block*512)"
+  echo "  -c num_char       head and tail the log output by num_char bytes"
+  echo "                      (JOBW_LOG_BYTE=num_char)"
+  echo "                      default value: 5120 (means 10KB maximum)"
+  echo "  -f                log full output (JOBW_LOG_BYTE='inf')"
+  echo "  -l lines_in_abs   lines in abstract (JOBW_LINES=lines_in_abs)"
+  echo "                      default value: 10"
+  echo "  -m string         more message in the log"
+  echo "  -h                show this help"
+  exit
+fi
+
+JOBW_IS_DARWIN="`uname -a | grep Darwin`"
+if [ -z "$JOBW_IS_DARWIN" ]; then
+    JOBW_IS_DARWIN=0
+    MD5SUM='md5sum'
+else
+    JOBW_IS_DARWIN=1
+    MD5SUM='md5'
+fi
+JOBW_START_SEC=`date +"%s"`
+if [ $JOBW_IS_DARWIN -gt 0 ]; then
+    JOBW_START_DATE="`date -jf '%s' $JOBW_START_SEC`"
+else
+    JOBW_START_DATE="`date -d@$JOBW_START_SEC`"
+fi
+
+JOBW_ABS=$'Subject:\t'"$JOBW_SUBJECT"$'\n'
+JOBW_ABS="${JOBW_ABS}`$SCRIPT_DIR/session_info`"$'\n'
+JOBW_ABS="$JOBW_ABS"$'CMD:\t'"$@"$'\n'
+
+JOBW_TMP_FILE="/tmp/""`echo $JOBW_ABS | $MD5SUM`".$JOBW_START_SEC.$$
+mkfifo $JOBW_TMP_FILE.log
+mkfifo $JOBW_TMP_FILE.log_trunc
+mkfifo $JOBW_TMP_FILE.abs
+
+
+if [ ! -z "$JOBW_LOG_FILE" ]; then
+    if [ "$JOBW_OVERWRITE" -gt "0" ]; then
+        printf '' > "$JOBW_LOG_FILE" 
+    fi
+    echo $'\n'"***************************** JOBW: NEW ENTRY ***************************"$'\n' >> $JOBW_LOG_FILE
+    { echo "======== JOBW: BEGIN OF LOG ======"$'\n'; \
+        cat $JOBW_TMP_FILE.log_trunc ; \
+        echo "======== JOBW: END OF LOG ======"$'\n';  \
+        } | tee -a $JOBW_LOG_FILE > $JOBW_TMP_FILE.log_txt &
+else
+    { echo "======== JOBW: BEGIN OF LOG ======"$'\n'; \
+        cat $JOBW_TMP_FILE.log_trunc ; \
+        echo "======== JOBW: END OF LOG ======"$'\n'; \
+        } > $JOBW_TMP_FILE.log_txt &
+fi
+
+{ head -c$JOBW_LOG_BYTE; \
+    { tail -c$JOBW_LOG_BYTE | { \
+    if read line; then \
+        echo $'\n\n''======== JOBW: MIDDLE OF LOG ======'$'\n'; \
+        echo "$line"; \
+        cat; \
+    fi; } \
+    } ; } \
+    < $JOBW_TMP_FILE.log > $JOBW_TMP_FILE.log_trunc &
+
+cat $JOBW_TMP_FILE.abs | tail -n$JOBW_LINES > $JOBW_TMP_FILE.abs_txt &
+
+
+"$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
+JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
+
+JOBW_END_SEC=`date "+%s"`
+JOBW_DURATION_SEC="$(( ($JOBW_END_SEC - $JOBW_START_SEC) ))"
+if [ $JOBW_IS_DARWIN -gt 0 ]; then
+    JOBW_END_DATE="`date -jf '%s' $JOBW_END_SEC`"
+else
+    JOBW_END_DATE="`date -d@$JOBW_END_SEC`"
+fi
+JOBW_DURATION_DATE=$(show_time $JOBW_DURATION_SEC)
+
+JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE"$'\n'
+JOBW_ABS="$JOBW_ABS"$'Start:\t'"$JOBW_START_DATE"$'\n'
+JOBW_ABS="$JOBW_ABS"$'End:\t'"$JOBW_END_DATE"$'\n'
+JOBW_ABS="$JOBW_ABS"$'Duration:\t'"$JOBW_DURATION_DATE"' ( '"$JOBW_DURATION_SEC"' sec )'$'\n'
+if [ ! -z "$JOBW_LOG_FILE" ]; then
+    JOBW_LOG_FILE_ABS_PATH=`echo "$(cd "$(dirname "$JOBW_LOG_FILE")"; pwd)/$(basename "$JOBW_LOG_FILE")"`
+    JOBW_ABS="$JOBW_ABS"$'Log:\t'"$JOBW_LOG_FILE_ABS_PATH"
+    if [ "$JOBW_OVERWRITE" -gt "0" ]; then
+        JOBW_ABS="$JOBW_ABS"$'\n'
+    else
+        JOBW_ABS="$JOBW_ABS"$'\t'"(Appended)"$'\n'
+    fi
+fi
+JOBW_ABS="$JOBW_ABS"$'\n'"Abstract: "$'\n*--------------\n'"`cat $JOBW_TMP_FILE.abs_txt`"$'\n*--------------\n'
+
+if [ ! -z "$JOBW_LOG_FILE" ]; then
+    echo "$JOBW_ABS" >> $JOBW_LOG_FILE
+fi
+
+if [ ! -z "$JOBW_EMAIL" ]; then
+    { echo "$JOBW_ABS" ; cat $JOBW_TMP_FILE.log_txt ; } | mail -s "[$JOBW_SUBJECT] $1" "$JOBW_EMAIL"
+fi
+
+echo
+echo "======== JOBW: SUMMARY ======"
+
+echo "$JOBW_ABS"
+
+rm -f $JOBW_TMP_FILE.*
+
