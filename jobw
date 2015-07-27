@@ -164,7 +164,8 @@ JOBW_ABS=$'Subject:\t'"$JOBW_SUBJECT"$'\n'
 JOBW_ABS="${JOBW_ABS}`$SCRIPT_DIR/session_info`"$'\n'
 JOBW_ABS="$JOBW_ABS"$'CMD:\t'"$@"$'\n'
 
-JOBW_TMP_FILE="/tmp/""`echo $JOBW_ABS | $MD5SUM | awk '{print $1}'`".$JOBW_START_SEC.$$
+mkdir -p /tmp/jobw
+JOBW_TMP_FILE="/tmp/jobw/""`echo $JOBW_ABS | $MD5SUM | awk '{print $1}'`".$JOBW_START_SEC.$$
 
 echo $JOBW_TMP_FILE
 
