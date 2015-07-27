@@ -190,21 +190,29 @@ else
         } > $JOBW_TMP_FILE.log_txt &
 fi
 
-{ head -c$JOBW_LOG_BYTE; \
-    { tail -c$JOBW_LOG_BYTE | { \
-    if read line; then \
-        echo $'\n\n''======== JOBW: MIDDLE OF LOG ======'$'\n'; \
-        echo "$line"; \
-        cat; \
-    fi; } \
-    } ; } \
-    < $JOBW_TMP_FILE.log > $JOBW_TMP_FILE.log_trunc &
+if [ "$JOBW_LOG_BYTE" = "inf" ]; then
+    cat < $JOBW_TMP_FILE.log > $JOBW_TMP_FILE.log_trunc &
+else
+    { head -c$JOBW_LOG_BYTE; \
+        { tail -c$JOBW_LOG_BYTE | { \
+        if read line; then \
+            echo $'\n\n''======== JOBW: MIDDLE OF LOG ======'$'\n'; \
+            echo "$line"; \
+            cat; \
+        fi; } \
+        } ; } \
+        < $JOBW_TMP_FILE.log > $JOBW_TMP_FILE.log_trunc &
+fi
 
 cat $JOBW_TMP_FILE.abs | tail -n$JOBW_LINES > $JOBW_TMP_FILE.abs_txt &
 
 
 "$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
 JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
+
+for job in `jobs -p`; do
+    wait $job
+done
 
 JOBW_END_SEC=`date "+%s"`
 JOBW_DURATION_SEC="$(( ($JOBW_END_SEC - $JOBW_START_SEC) ))"
