@@ -21,6 +21,10 @@ function show_help() {
   echo "  -l lines_in_abs   lines in abstract (JOBW_LINES=lines_in_abs)"
   echo "                      default value: 10"
   echo "  -m string         more message in the log (JOBW_MORE=string)"
+  echo "  -I                make the gard process interruptible by ^C"
+  echo "                      (JOBW_INTERRUPTIBLE=1)"
+  echo "  -i                make the gard process uninterruptible by ^C"
+  echo "                      (JOBW_INTERRUPTIBLE=0) default"
   echo "  -h                show this help"
 }
 
@@ -66,7 +70,9 @@ if [ -z "$JOBW_LOG_IN_EMAIL" ]; then
     JOBW_LOG_IN_EMAIL=1
 fi
 
-pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
+if [ -z "$JOBW_INTERRUPTIBLE" ]; then
+    JOBW_INTERRUPTIBLE=0
+fi
 
 JOBW_SHOW_HELP=0
 
@@ -144,6 +150,14 @@ if [ "$JOBW_SHOW_HELP" -gt 0 ]; then
     show_help
     exit
 fi
+
+# end of parameter parsing
+
+if [ "$JOBW_INTERRUPTIBLE" -eq "0" ]; then
+    trap '' 2  # 2 is for Ctrl+C
+fi
+
+pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
 
 JOBW_IS_DARWIN="`uname -a | grep Darwin`"
 if [ -z "$JOBW_IS_DARWIN" ]; then
