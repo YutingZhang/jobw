@@ -66,7 +66,7 @@ if [ -z "$JOBW_LOG_IN_EMAIL" ]; then
     JOBW_LOG_IN_EMAIL=1
 fi
 
-pushd `dirname $0` > /dev/null ; SCRIPT_DIR=`pwd`; popd > /dev/null
+pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
 
 JOBW_SHOW_HELP=0
 
@@ -161,7 +161,7 @@ else
 fi
 
 JOBW_ABS=$'Subject:\t'"$JOBW_SUBJECT"$'\n'
-JOBW_ABS="${JOBW_ABS}`$SCRIPT_DIR/session_info`"$'\n'
+JOBW_ABS="${JOBW_ABS}`"$SCRIPT_DIR/session_info"`"$'\n'
 JOBW_ABS="$JOBW_ABS"$'CMD:\t'"$@"$'\n'
 
 mkdir -p /tmp/jobw
@@ -208,7 +208,7 @@ fi
 cat $JOBW_TMP_FILE.abs | tail -n$JOBW_LINES > $JOBW_TMP_FILE.abs_txt &
 
 
-"$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
+"$SCRIPT_DIR/run_as_is" "$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
 JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
 
 for job in `jobs -p`; do
