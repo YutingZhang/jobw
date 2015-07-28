@@ -21,9 +21,9 @@ function show_help() {
   echo "  -l lines_in_abs   lines in abstract (JOBW_LINES=lines_in_abs)"
   echo "                      default value: 10"
   echo "  -m string         more message in the log (JOBW_MORE=string)"
-  echo "  -I                make the gard process interruptible by ^C"
+  echo "  -I                make the gard process interruptible by Ctrl+C"
   echo "                      (JOBW_INTERRUPTIBLE=1)"
-  echo "  -i                make the gard process uninterruptible by ^C"
+  echo "  -i                make the gard process uninterruptible by Ctrl+C"
   echo "                      (JOBW_INTERRUPTIBLE=0) default"
   echo "  -h                show this help"
 }
