@@ -314,7 +314,7 @@ else
 fi
 JOBW_DURATION_DATE=$(show_time $JOBW_DURATION_SEC)
 
-JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE"$'\n'
+JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE [$($SCRIPT_DIR/interp_exit_code $JOBW_EXIT_CODE)]"$'\n'
 JOBW_ABS="$JOBW_ABS"$'Start:\t'"$JOBW_START_DATE"$'\n'
 JOBW_ABS="$JOBW_ABS"$'End:\t'"$JOBW_END_DATE"$'\n'
 JOBW_ABS="$JOBW_ABS"$'Duration:\t'"$JOBW_DURATION_DATE"' ( '"$JOBW_DURATION_SEC"' sec )'$'\n'
