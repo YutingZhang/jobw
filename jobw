@@ -10,7 +10,7 @@ function show_help() {
   echo
   echo        "USAGE: `basename $0` [opts] cmd [cmd_args]"
   echo
-  echo        "ARGS: "
+  echo        "ARGS:"
   echo
   echo        "  -a email_addr     send email to email_addr [JOBW_EMAIL=email_addr]"
   if [ ! -z "$JOBW_EMAIL" ]; then
@@ -201,10 +201,6 @@ fi
 
 # end of parameter parsing
 
-if [ "$JOBW_INTERRUPTIBLE" -eq "0" ]; then
-    trap '' 2  # 2 is for Ctrl+C
-fi
-
 pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
 
 JOBW_IS_DARWIN="`uname -a | grep Darwin`"
@@ -272,6 +268,10 @@ cat $JOBW_TMP_FILE.abs | tail -n$JOBW_LINES > $JOBW_TMP_FILE.abs_txt &
 
 "$SCRIPT_DIR/run_as_is" "$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
 JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
+
+if [ "$JOBW_INTERRUPTIBLE" -eq "0" ]; then
+    trap '' 2  # 2 is for Ctrl+C
+fi
 
 for job in `jobs -p`; do
     wait $job
