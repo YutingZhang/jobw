@@ -297,7 +297,8 @@ else
     trap 'exit 130' 2  # 2 is for Ctrl+C
 fi
 
-"$SCRIPT_DIR/run_as_is" "$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
+#"$SCRIPT_DIR/run_as_is" 
+"$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
 JOBW_EXIT_CODE=${PIPESTATUS[0]}
 #JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
 
@@ -314,7 +315,8 @@ else
 fi
 JOBW_DURATION_DATE=$(show_time $JOBW_DURATION_SEC)
 
-JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE [$($SCRIPT_DIR/interp_exit_code $JOBW_EXIT_CODE)]"$'\n'
+JOBW_EXIT_STAT="`$SCRIPT_DIR/interp_exit_code $JOBW_EXIT_CODE`"
+JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE"$'\t('"$JOBW_EXIT_STAT"$')\n'
 JOBW_ABS="$JOBW_ABS"$'Start:\t'"$JOBW_START_DATE"$'\n'
 JOBW_ABS="$JOBW_ABS"$'End:\t'"$JOBW_END_DATE"$'\n'
 JOBW_ABS="$JOBW_ABS"$'Duration:\t'"$JOBW_DURATION_DATE"' ( '"$JOBW_DURATION_SEC"' sec )'$'\n'
@@ -344,8 +346,8 @@ if [ ! -z "$JOBW_EMAIL" ]; then
     else
         echo "$JOBW_ABS"  > $JOBW_TMP_FILE.abs_full &
     fi
+    cat $JOBW_TMP_FILE.abs_full | mail -s "[$JOBW_SUBJECT] $1" "$JOBW_EMAIL"
 fi
-cat $JOBW_TMP_FILE.abs_full | mail -s "[$JOBW_SUBJECT] $1" "$JOBW_EMAIL"
 
 echo
 echo "======== JOBW: SUMMARY ======"

@@ -15,8 +15,8 @@ declare -a EC_STR
 
 for n in {1..126}; do
 	EC_STR_n="Fatal error signal $n";
-	if [ ! -z ${SIG_STR[$n]} ]; then
-		EC_STR_n="$EC_STR_n (${SIG_STR[$n]})"
+	if [ ! -z "${SIG_STR[$n]}" ]; then
+		EC_STR_n="$EC_STR_n "'['"${SIG_STR[$n]}"']'
 	fi
 	EC_STR[128+$n]="$EC_STR_n"
 done
@@ -27,7 +27,7 @@ EC_STR[2]='Misuse of shell builtins'
 EC_STR[126]='Command invoked cannot execute'
 EC_STR[127]='command not found'
 EC_STR[128]='Invalid argument to exit'
-EC_STR[130]='Script terminated by Control-C : '${EC_STR[130]}
+EC_STR[130]="${EC_STR[130]}"' - Script terminated by Control-C'; 
 EC_STR[255]='Exit status out of range'
 
 if [ -z "${EC_STR[$1]}" ]; then
