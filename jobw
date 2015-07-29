@@ -67,6 +67,29 @@ function show_help() {
   echo
 }
 
+function safe_int_force() {
+    for job in `jobs -p`; do
+        kill -9 "$job" > /dev/null 2&>1
+    done
+}
+
+function safe_int() {
+
+    for job in `jobs -p`; do
+        kill "$job" > /dev/null 2&>1
+    done
+    trap safe_int_force 2
+    for job in `jobs -p`; do
+        wait "$job"
+    done
+    echo
+    echo "======== JOBW: JOB KILLED BY USER ======";
+    echo
+
+    trap "exit 130" 2
+
+}
+
 function show_time () {
     num=$1
     min=0
@@ -94,6 +117,8 @@ function show_time () {
 }
 
 # main
+
+trap 'exit 130' 2  # 2 is for Ctrl+C
 
 JOBW_VERSION="scm-1"
 
@@ -265,13 +290,16 @@ fi
 
 cat $JOBW_TMP_FILE.abs | tail -n$JOBW_LINES > $JOBW_TMP_FILE.abs_txt &
 
+if [ "$JOBW_INTERRUPTIBLE" -eq "0" ]; then
+    trap safe_int 2
+    # 2 is for Ctrl+C
+else
+    trap 'exit 130' 2  # 2 is for Ctrl+C
+fi
 
 "$SCRIPT_DIR/run_as_is" "$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
-JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
-
-if [ "$JOBW_INTERRUPTIBLE" -eq "0" ]; then
-    trap '' 2  # 2 is for Ctrl+C
-fi
+JOBW_EXIT_CODE=${PIPESTATUS[0]}
+#JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
 
 for job in `jobs -p`; do
     wait $job
