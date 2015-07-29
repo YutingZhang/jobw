@@ -1,10 +1,11 @@
 PREFIX?=/usr
 INSTALL_DIR:=$(PREFIX)
 
-all: jobw session_info run_as_is
+SCRIPT_SRC=jobw session_info run_as_is
+#SCRIPT_DST=$(addprefix $(INSTALL_DIR)/, $(TOOL_SRCS))
 
-install: all
-	cp jobw $(INSTALL_DIR)/bin/
-	cp session_info $(INSTALL_DIR)/bin/
-	cp run_as_is $(INSTALL_DIR)/bin/
+all: $(SCRIPT_SRC)
+
+install: 
+	cp $(SCRIPT_SRC) $(INSTALL_DIR)/bin/
 
