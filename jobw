@@ -257,7 +257,7 @@ for (( i=0;i<$ELEMENTS;i++)); do
    arg_i_str=`printf '%q ' "$arg_i"`
    JOBW_CMD="$JOBW_CMD$arg_i_str"
 done
-JOBW_CMD="echo ${JOBW_CMD:0:$(( (${#JOBW_CMD} - 1) ))}"
+JOBW_CMD="${JOBW_CMD:0:$(( (${#JOBW_CMD} - 1) ))}"
 # ========================================
 
 JOBW_ABS=$'Subject:\t'"$JOBW_SUBJECT"$'\n'
