@@ -69,14 +69,14 @@ function show_help() {
 
 function safe_int_force() {
     for job in `jobs -p`; do
-        kill -9 "$job" > /dev/null 2&>1
+        kill -9 "$job" > /dev/null 2>&1
     done
 }
 
 function safe_int() {
 
     for job in `jobs -p`; do
-        kill "$job" > /dev/null 2&>1
+        kill "$job" > /dev/null 2>&1
     done
     trap safe_int_force 2
     for job in `jobs -p`; do
