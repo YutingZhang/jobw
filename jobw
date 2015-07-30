@@ -142,7 +142,7 @@ fi
 
 JOBW_SHOW_HELP=0
 
-while getopts "a:YNus:o:wnb:c:fl:m:vh" opt; do
+while getopts "a:YNus:o:wnb:c:fl:m:Iivh" opt; do
 case $opt in
   v)
       echo "JOBW: version:" $JOBW_VERSION
@@ -195,6 +195,12 @@ case $opt in
       if [ -z "$JOBW_LINES" ]; then 
           echo "wrong arg for -l" >&2; exit
       fi
+      ;;
+  I)
+      JOBW_INTERRUPTIBLE=1
+      ;;
+  i)
+      JOBW_INTERRUPTIBLE=0
       ;;
   m)
       JOBW_MORE="$OPTARG"
