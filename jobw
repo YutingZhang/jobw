@@ -76,7 +76,7 @@ function safe_int_force() {
 function safe_int() {
 
     for job in `jobs -p`; do
-        kill "$job" > /dev/null 2>&1
+        kill -2 "$job" > /dev/null 2>&1
     done
     trap safe_int_force 2
     for job in `jobs -p`; do
