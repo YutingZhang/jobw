@@ -7,5 +7,6 @@ while kill -0 $JOBW_PID > /dev/null ; do
     sleep 0.1
 done
 
-kill -1 $JOBW_PPID
+kill -1 $JOBW_PPID > /dev/null
+
 
