@@ -67,33 +67,94 @@ function show_help() {
   echo
 }
 
-function job_pid() {
-    if [ "$JOBW_JOB_PID" == "" ]; then
-        while true; do
-            if [ -a "$JOBW_TMP_FILE.pid" ]; then
-                break;
-            fi
-            sleep 0.05
-        done
-        JOBW_JOB_PID=`cat $JOBW_TMP_FILE.pid`
+
+function finish() {
+
+trap "" 2
+
+wait $JOBW_JOB_PID
+JOBW_EXIT_CODE=$?
+#JOBW_EXIT_CODE=${PIPESTATUS[0]}
+#JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
+
+for job in `jobs -p`; do
+    wait $job
+done
+
+
+JOBW_END_SEC=`date "+%s"`
+JOBW_DURATION_SEC="$(( ($JOBW_END_SEC - $JOBW_START_SEC) ))"
+if [ $JOBW_IS_DARWIN -gt 0 ]; then
+    JOBW_END_DATE="`date -jf '%s' $JOBW_END_SEC`"
+else
+    JOBW_END_DATE="`date -d@$JOBW_END_SEC`"
+fi
+JOBW_DURATION_DATE=$(show_time $JOBW_DURATION_SEC)
+
+JOBW_EXIT_STAT="`$SCRIPT_DIR/interp_exit_code $JOBW_EXIT_CODE`"
+JOBW_ABS="$JOBW_ABS"$'PID:\t'"$JOBW_JOB_PID"$'\n'
+JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE"$'\t('"$JOBW_EXIT_STAT"$')\n'
+JOBW_ABS="$JOBW_ABS"$'Start:\t'"$JOBW_START_DATE"$'\n'
+JOBW_ABS="$JOBW_ABS"$'End:\t'"$JOBW_END_DATE"$'\n'
+JOBW_ABS="$JOBW_ABS"$'Duration:\t'"$JOBW_DURATION_DATE"' ( '"$JOBW_DURATION_SEC"' sec )'$'\n'
+if [ ! -z "$JOBW_LOG_FILE" ]; then
+    JOBW_LOG_FILE_ABS_PATH=`echo "$(cd "$(dirname "$JOBW_LOG_FILE")"; pwd)/$(basename "$JOBW_LOG_FILE")"`
+    JOBW_ABS="$JOBW_ABS"$'Log:\t'"$JOBW_LOG_FILE_ABS_PATH"
+    if [ "$JOBW_OVERWRITE" -gt "0" ]; then
+        JOBW_ABS="$JOBW_ABS"$'\n'
+    else
+        JOBW_ABS="$JOBW_ABS"$'\t'"(Appended)"$'\n'
     fi
+fi
+if [ ! -z "$JOBW_MORE" ]; then
+    JOBW_ABS="$JOBW_ABS"$'\n'"More: "$'\n*--------------\n'"$JOBW_MORE"$'\n*--------------\n'
+fi
+if [ "$JOBW_LINES" -gt "0" ]; then
+    JOBW_ABS="$JOBW_ABS"$'\n'"Abstract: "$'\n*--------------\n'"`cat $JOBW_TMP_FILE.abs_txt`"$'\n*--------------\n'
+fi
+
+if [ ! -z "$JOBW_LOG_FILE" ]; then
+    echo "$JOBW_ABS" >> $JOBW_LOG_FILE
+fi
+
+echo
+echo "======== JOBW: SUMMARY ======"
+
+echo "$JOBW_ABS"
+
+if [ ! -z "$JOBW_EMAIL" ]; then
+    if [ "$JOBW_LOG_IN_EMAIL" -gt "0" ]; then
+        { echo "$JOBW_ABS" ; cat $JOBW_TMP_FILE.log_txt ; } > $JOBW_TMP_FILE.abs_full &
+    else
+        echo "$JOBW_ABS"  > $JOBW_TMP_FILE.abs_full &
+    fi
+    cat $JOBW_TMP_FILE.abs_full | mail -s "[$JOBW_SUBJECT] $JOBW_CMD" "$JOBW_EMAIL"
+    echo "EMAIL TO :    $JOBW_EMAIL"
+fi
+
+
+
+rm -f $JOBW_TMP_FILE.*
+
 }
 
 function safe_int_force() {
-    job_pid
-
     echo "................... [FORCE KILLING JOB - PID: "$JOBW_JOB_PID"]"
     kill -9 $JOBW_JOB_PID
 }
 
 function safe_int() {
-
-    job_pid
-
     echo "................... [TRY TO KILL JOB - PID: "$JOBW_JOB_PID"]"
-    kill -2 $JOBW_JOB_PID
+    kill -15 $JOBW_JOB_PID
     trap safe_int_force 2
+    
+    finish
+    exit $JOBW_EXIT_CODE
+}
 
+function safe_hup() {
+    finish
+    exit $JOBW_EXIT_CODE
 }
 
 function show_time () {
@@ -124,6 +185,7 @@ function show_time () {
 
 # main
 
+trap 'safe_hup' 1
 trap 'exit 130' 2  # 2 is for Ctrl+C
 
 JOBW_VERSION="scm-1"
@@ -328,69 +390,46 @@ else
 fi
 
 #"$SCRIPT_DIR/run_as_is"
-$SCRIPT_DIR/jjobw_pid "$JOBW_TMP_FILE" $$ &
-( cat $JOBW_TMP_FILE.stdout | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs ) & 
-jobs -p | sort -u > $JOBW_TMP_FILE.sub1
-"$@" > $JOBW_TMP_FILE.stdout 2>&1 | ( touch $JOBW_TMP_FILE.started  )
-JOBW_EXIT_CODE=${PIPESTATUS[0]}
-#JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
-
-for job in `jobs -p`; do
-    wait $job
+"$@" > $JOBW_TMP_FILE.stdout 2>&1 & echo $! > $JOBW_TMP_FILE.pid 
+JOBW_JOB_PID=`cat $JOBW_TMP_FILE.pid`
+( cat $JOBW_TMP_FILE.stdout | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs ) &
+$SCRIPT_DIR/jjobw_guard $$ $JOBW_JOB_PID &
+while kill -0 $JOBW_JOB_PID > /dev/null ; do
+    if read JOBW_INTER_CMD ; then
+        :
+    else
+        echo "...................  [SIGKILL]" >&2
+        kill -9 $JOBW_JOB_PID
+    fi
+    JOBW_INTER_CMD1=`echo $JOBW_INTER_CMD`
+    if [ "$JOBW_INTER_CMD1" == "" ]; then
+        :
+    elif [ "$JOBW_INTER_CMD" == "int" ]; then
+        echo "...................  [SIGINT]" >&2
+        kill -2 $JOBW_JOB_PID
+    elif [ "$JOBW_INTER_CMD" == "hup" ]; then
+        echo "...................  [SIGHUP]" >&2
+        kill -1 $JOBW_JOB_PID
+    elif [ "$JOBW_INTER_CMD" == "term" ]; then
+        echo "...................  [SIGTERM]" >&2
+        kill -15 $JOBW_JOB_PID
+    elif [ "$JOBW_INTER_CMD" == "kill" ]; then
+        echo "...................  [SIGKILL]" >&2
+        kill -9 $JOBW_JOB_PID
+    elif [ "$JOBW_INTER_CMD" == "quit" ]; then
+        echo "...................  [SIGQUIT]" >&2
+        kill -3 $JOBW_JOB_PID
+    elif [ "${JOBW_INTER_CMD:0:3}" == "sig" ]; then
+        JOBW_SIG_NUM=`echo "${JOBW_INTER_CMD:3}"`
+        echo "...................  [SIG $JOBW_SIG_NUM]" >&2
+        kill -$JOBW_SIG_NUM $JOBW_JOB_PID
+    elif [ "${JOBW_INTER_CMD:0:5}" == "email" ]; then
+        JOBW_EMAIL=`echo ${JOBW_INTER_CMD:5}`
+        echo "...................  [EMAIL $JOBW_EMAIL]"
+    else
+        echo "...................  [UNKNOWN COMMAND]" >&2
+    fi
 done
 
-job_pid
-
-#JOBW_JOB_PID=`cat $JOBW_TMP_FILE.pid`
-
-JOBW_END_SEC=`date "+%s"`
-JOBW_DURATION_SEC="$(( ($JOBW_END_SEC - $JOBW_START_SEC) ))"
-if [ $JOBW_IS_DARWIN -gt 0 ]; then
-    JOBW_END_DATE="`date -jf '%s' $JOBW_END_SEC`"
-else
-    JOBW_END_DATE="`date -d@$JOBW_END_SEC`"
-fi
-JOBW_DURATION_DATE=$(show_time $JOBW_DURATION_SEC)
-
-JOBW_EXIT_STAT="`$SCRIPT_DIR/interp_exit_code $JOBW_EXIT_CODE`"
-JOBW_ABS="$JOBW_ABS"$'PID:\t'"$JOBW_JOB_PID"$'\n'
-JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE"$'\t('"$JOBW_EXIT_STAT"$')\n'
-JOBW_ABS="$JOBW_ABS"$'Start:\t'"$JOBW_START_DATE"$'\n'
-JOBW_ABS="$JOBW_ABS"$'End:\t'"$JOBW_END_DATE"$'\n'
-JOBW_ABS="$JOBW_ABS"$'Duration:\t'"$JOBW_DURATION_DATE"' ( '"$JOBW_DURATION_SEC"' sec )'$'\n'
-if [ ! -z "$JOBW_LOG_FILE" ]; then
-    JOBW_LOG_FILE_ABS_PATH=`echo "$(cd "$(dirname "$JOBW_LOG_FILE")"; pwd)/$(basename "$JOBW_LOG_FILE")"`
-    JOBW_ABS="$JOBW_ABS"$'Log:\t'"$JOBW_LOG_FILE_ABS_PATH"
-    if [ "$JOBW_OVERWRITE" -gt "0" ]; then
-        JOBW_ABS="$JOBW_ABS"$'\n'
-    else
-        JOBW_ABS="$JOBW_ABS"$'\t'"(Appended)"$'\n'
-    fi
-fi
-if [ ! -z "$JOBW_MORE" ]; then
-    JOBW_ABS="$JOBW_ABS"$'\n'"More: "$'\n*--------------\n'"$JOBW_MORE"$'\n*--------------\n'
-fi
-if [ "$JOBW_LINES" -gt "0" ]; then
-    JOBW_ABS="$JOBW_ABS"$'\n'"Abstract: "$'\n*--------------\n'"`cat $JOBW_TMP_FILE.abs_txt`"$'\n*--------------\n'
-fi
-
-if [ ! -z "$JOBW_LOG_FILE" ]; then
-    echo "$JOBW_ABS" >> $JOBW_LOG_FILE
-fi
-
-if [ ! -z "$JOBW_EMAIL" ]; then
-    if [ "$JOBW_LOG_IN_EMAIL" -gt "0" ]; then
-        { echo "$JOBW_ABS" ; cat $JOBW_TMP_FILE.log_txt ; } > $JOBW_TMP_FILE.abs_full &
-    else
-        echo "$JOBW_ABS"  > $JOBW_TMP_FILE.abs_full &
-    fi
-    cat $JOBW_TMP_FILE.abs_full | mail -s "[$JOBW_SUBJECT] $JOBW_CMD" "$JOBW_EMAIL"
-fi
-
-echo
-echo "======== JOBW: SUMMARY ======"
-
-echo "$JOBW_ABS"
-
-rm -f $JOBW_TMP_FILE.*
+finish
 
