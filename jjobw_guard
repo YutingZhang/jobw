@@ -1,0 +1,11 @@
+#!/bin/bash
+
+JOBW_PPID=$1
+JOBW_PID=$2
+
+while kill -0 $JOBW_PID > /dev/null ; do
+    sleep 0.1
+done
+
+kill -1 $JOBW_PPID
+
