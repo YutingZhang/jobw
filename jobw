@@ -67,26 +67,32 @@ function show_help() {
   echo
 }
 
+function job_pid() {
+    if [ "$JOBW_JOB_PID" == "" ]; then
+        while true; do
+            if [ -a "$JOBW_TMP_FILE.pid" ]; then
+                break;
+            fi
+            sleep 0.05
+        done
+        JOBW_JOB_PID=`cat $JOBW_TMP_FILE.pid`
+    fi
+}
+
 function safe_int_force() {
-    for job in `jobs -p`; do
-        kill -9 "$job" > /dev/null 2>&1
-    done
+    job_pid
+
+    echo "................... [FORCE KILLING JOB - PID: "$JOBW_JOB_PID"]"
+    kill -9 $JOBW_JOB_PID
 }
 
 function safe_int() {
 
-    for job in `jobs -p`; do
-        kill -2 "$job" > /dev/null 2>&1
-    done
-    trap safe_int_force 2
-    for job in `jobs -p`; do
-        wait "$job"
-    done
-    echo
-    echo "======== JOBW: JOB KILLED BY USER ======";
-    echo
+    job_pid
 
-    trap "exit 130" 2
+    echo "................... [TRY TO KILL JOB - PID: "$JOBW_JOB_PID"]"
+    kill -2 $JOBW_JOB_PID
+    trap safe_int_force 2
 
 }
 
@@ -279,6 +285,7 @@ mkfifo $JOBW_TMP_FILE.log
 mkfifo $JOBW_TMP_FILE.log_trunc
 mkfifo $JOBW_TMP_FILE.abs
 mkfifo $JOBW_TMP_FILE.abs_full
+mkfifo $JOBW_TMP_FILE.stdout
 
 
 if [ ! -z "$JOBW_LOG_FILE" ]; then
@@ -311,7 +318,7 @@ else
         < $JOBW_TMP_FILE.log > $JOBW_TMP_FILE.log_trunc &
 fi
 
-cat $JOBW_TMP_FILE.abs | tail -n$JOBW_LINES > $JOBW_TMP_FILE.abs_txt &
+tail -n$JOBW_LINES $JOBW_TMP_FILE.abs > $JOBW_TMP_FILE.abs_txt &
 
 if [ "$JOBW_INTERRUPTIBLE" -eq "0" ]; then
     trap safe_int 2
@@ -320,14 +327,21 @@ else
     trap 'exit 130' 2  # 2 is for Ctrl+C
 fi
 
-#"$SCRIPT_DIR/run_as_is" 
-"$@" 2>&1 | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs
+#"$SCRIPT_DIR/run_as_is"
+$SCRIPT_DIR/jjobw_pid "$JOBW_TMP_FILE" $$ &
+( cat $JOBW_TMP_FILE.stdout | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs ) & 
+jobs -p | sort -u > $JOBW_TMP_FILE.sub1
+"$@" > $JOBW_TMP_FILE.stdout 2>&1 | ( touch $JOBW_TMP_FILE.started  )
 JOBW_EXIT_CODE=${PIPESTATUS[0]}
 #JOBW_EXIT_CODE=${PIPESTATUS[$(( (${#PIPESTATUS[@]} - 2 ) ))]}
 
 for job in `jobs -p`; do
     wait $job
 done
+
+job_pid
+
+#JOBW_JOB_PID=`cat $JOBW_TMP_FILE.pid`
 
 JOBW_END_SEC=`date "+%s"`
 JOBW_DURATION_SEC="$(( ($JOBW_END_SEC - $JOBW_START_SEC) ))"
@@ -339,6 +353,7 @@ fi
 JOBW_DURATION_DATE=$(show_time $JOBW_DURATION_SEC)
 
 JOBW_EXIT_STAT="`$SCRIPT_DIR/interp_exit_code $JOBW_EXIT_CODE`"
+JOBW_ABS="$JOBW_ABS"$'PID:\t'"$JOBW_JOB_PID"$'\n'
 JOBW_ABS="$JOBW_ABS"$'Exit code:\t'"$JOBW_EXIT_CODE"$'\t('"$JOBW_EXIT_STAT"$')\n'
 JOBW_ABS="$JOBW_ABS"$'Start:\t'"$JOBW_START_DATE"$'\n'
 JOBW_ABS="$JOBW_ABS"$'End:\t'"$JOBW_END_DATE"$'\n'
