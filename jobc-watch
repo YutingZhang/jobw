@@ -15,6 +15,11 @@ JOBC_IS_CANCELED=1
 
 }
 
+function safe_exit() {
+    touch $JOBC_VAR_DIR/DONE
+    exit 0
+}
+
 # main
 
 pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
@@ -37,10 +42,23 @@ mkdir -p "$JOBC_VAR_DIR/r"  # running
 mkdir -p "$JOBC_VAR_DIR/d"  # done
 mkdir -p "$JOBC_VAR_DIR/c"  # canceled
 
+rm -f $JOBC_VAR_DIR/DONE
+
 while true; do
+    JOBCW_QUIT_ON_EMPTY=0
+    if [ -f "$JOBC_VAR_DIR/quit_on_empty" ]; then
+        JOBCW_QUIT_ON_EMPTY=1
+    fi
+    if [ -f "$JOBC_VAR_DIR/quit" ]; then
+        break;
+    fi
+    
+    JOBCW_QUEUE_EMPTY=1
 
     echo "...... [ "`date`" ] ...... [ List ]"
     ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
+        JOBCW_QUEUE_EMPTY=0
+
         JOB_FOLDER_Q="$JOBC_VAR_DIR/q/$line"
         JOB_FOLDER_R="$JOBC_VAR_DIR/r/$line"
         #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
@@ -67,11 +85,18 @@ while true; do
         fi
 
     done
-
-    trap - 2
-    echo "...... [ "`date`" ] ...... [ Sleep for 10s ]"
-    sleep 10
+    
+    trap 'safe_exit' 2
+    if [ "$JOBCW_QUEUE_EMPTY" -eq "0"]; then
+        if [ "$JOBCW_QUIT_ON_EMPTY" -ne "0" ]; then
+            break;
+        fi
+        echo "...... [ "`date`" ] ...... [ Sleep for 10s ]"
+        sleep 10
+    fi
 
 done
+
+safe_exit
 
 
