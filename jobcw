@@ -1,0 +1,34 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+    echo "JOB-CLIENT WACTHER"
+    echo "  $0 JOBC_VAR_DIR" >&2
+fi
+
+JOBC_VAR_DIR="$1"
+
+mkdir -p "$JOBC_VAR_DIR/q"  # queueing
+mkdir -p "$JOBC_VAR_DIR/r"  # running
+mkdir -p "$JOBC_VAR_DIR/d"  # done
+
+while true; do
+
+    ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
+        JOB_FOLDER_Q="$JOBC_VAR_DIR/q/$line"
+        JOB_FOLDER_R="$JOBC_VAR_DIR/r/$line"
+        #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
+        
+        trap "" 2
+        mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
+        bash "$JOB_FOLDER_R"
+        mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/d"
+
+    done
+
+    trap - 2
+    echo "....... [ Sleep for 10s ]"
+    sleep 10
+
+do
+
+
