@@ -2,7 +2,7 @@
 
 if [ "$1" == "" ]; then
     echo "JOB-CLIENT ADD"
-    echo "  $0 JOBC_VAR_DIR JOB_NAME" >&2
+    echo "  "`basename "$0"`" JOBC_VAR_DIR JOB_NAME" >&2
     exit 1
 fi
 
