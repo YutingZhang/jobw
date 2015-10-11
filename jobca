@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ "$1" == "" ]; then
+    echo "JOB-CLIENT ADD"
+    echo "  $0 JOBC_VAR_DIR JOB_NAME" >&2
+    exit 1
+fi
+
+JOBC_VAR_DIR="$1"
+
+JOBC_JOB_FILE="$2"
+if [ "$JOBC_JOB_FILE" == "" ]; then
+    JOBC_JOB_FILE="default"
+fi
+JOBC_JOB_FILE="$JOBC_JOB_FILE".`date "+%s"`.$$
+JOBC_TMP_FILE="/tmp/jobc/$JOBC_JOB_FILE";
+
+mkdir -p /tmp/jobc
+mkdir -p "$JOBC_VAR_DIR/q"  # queueing
+
+echo "......... [PLEASE INPUT SCRIPT]"
+cat > $JOBC_TMP_FILE
+
+JOBC_CAT_EC=`echo $?`
+if [ "$JOBC_CAT_EC" -eq "0" ]; then
+    mv "$JOBC_TMP_FILE" "$JOBC_VAR_DIR/q/$JOBC_JOB_FILE"
+    echo "......... [ADDED TO QUEUE]"
+else
+    rm -f $JOBC_TMP_FILE
+    echo "......... [ABORTED]"
+fi
+
+
