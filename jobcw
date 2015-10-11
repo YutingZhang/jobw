@@ -15,6 +15,10 @@ JOBC_IS_CANCELED=1
 
 }
 
+# main
+
+pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
+
 if [ "$1" == "" ]; then
     echo "JOB-CLIENT WACTHER"
     echo "  $0 JOBC_VAR_DIR" >&2
@@ -22,6 +26,11 @@ if [ "$1" == "" ]; then
 fi
 
 JOBC_VAR_DIR="$1"
+
+JOBCW_ID="$2"
+if [ "$2" == "" ]; then
+    JOBCW_ID="unknown"
+fi
 
 mkdir -p "$JOBC_VAR_DIR/q"  # queueing
 mkdir -p "$JOBC_VAR_DIR/r"  # running
@@ -43,12 +52,18 @@ while true; do
         JOBC_IS_CANCELED=0
         bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo $!`
         
+        ( echo "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
+            ( $SCRIPT_DIR/session_info | sed -e 's/^/\t/' ) ) >> $JOBC_VAR_DIR/log
         wait $JOBC_JOB_PID
         
         if [ "$JOBC_JOB_PID" -eq "0" ]; then
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/d"
+            ( echo "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  DONE:   $line" ; \
+                ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
         else
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/c"
+            ( echo "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  CANCEL: $line" ; \
+                ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
         fi
 
     done
