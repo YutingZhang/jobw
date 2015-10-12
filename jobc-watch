@@ -16,7 +16,7 @@ JOBC_IS_CANCELED=1
 }
 
 function safe_exit() {
-    touch $JOBC_VAR_DIR/DONE
+    touch $JOBC_VAR_DIR/INTERRUPTED
     exit 0
 }
 
@@ -42,6 +42,7 @@ mkdir -p "$JOBC_VAR_DIR/r"  # running
 mkdir -p "$JOBC_VAR_DIR/d"  # done
 mkdir -p "$JOBC_VAR_DIR/c"  # canceled
 
+rm -f $JOBC_VAR_DIR/INTERRUPTED
 rm -f $JOBC_VAR_DIR/DONE
 
 while true; do
@@ -98,6 +99,6 @@ while true; do
 
 done
 
-safe_exit
+touch $JOBC_VAR_DIR/DONE
 
 
