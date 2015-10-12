@@ -87,7 +87,7 @@ while true; do
     done
     
     trap 'safe_exit' 2
-    if [ "$JOBCW_QUEUE_EMPTY" -eq "0"]; then
+    if [ "$JOBCW_QUEUE_EMPTY" -eq "1" ]; then
         if [ "$JOBCW_QUIT_ON_EMPTY" -ne "0" ]; then
             break;
         fi
