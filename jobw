@@ -341,7 +341,7 @@ JOBW_ABS="${JOBW_ABS}`"$SCRIPT_DIR/session_info"`"$'\n'
 JOBW_ABS="$JOBW_ABS"$'CMD:\t'"$JOBW_CMD"$'\n'
 
 mkdir -p /tmp/jobw-`whoami`
-JOBW_TMP_FILE="/tmp/jobw/""`echo $JOBW_ABS | $MD5SUM | awk '{print $1}'`".$JOBW_START_SEC.$$
+JOBW_TMP_FILE="/tmp/jobw-`whoami`/""`echo $JOBW_ABS | $MD5SUM | awk '{print $1}'`".$JOBW_START_SEC.$$
 
 echo $JOBW_TMP_FILE
 
