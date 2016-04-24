@@ -12,6 +12,7 @@ JOBC_JOB_FILE="$2"
 if [ "$JOBC_JOB_FILE" == "" ]; then
     JOBC_JOB_FILE="default"
 fi
+JOBC_JOB_FILE=`echo "$JOBC_JOB_FILE" | sed -e 's/\//_/g'`
 JOBC_JOB_FILE="$JOBC_JOB_FILE".`date "+%s"`.$$
 JOBC_TMP_FILE="/tmp/jobc/$JOBC_JOB_FILE";
 
