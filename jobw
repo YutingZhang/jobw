@@ -63,6 +63,7 @@ function show_help() {
   else echo; fi
   echo
   echo        "  -v                show version"
+  echo        "  -d                disable interative command line"
   echo        "  -h                show this help"
   echo
 }
@@ -210,6 +211,8 @@ if [ -z "$JOBW_INTERRUPTIBLE" ]; then
     JOBW_INTERRUPTIBLE=0
 fi
 
+JOBW_INTERACT=1
+
 JOBW_SHOW_HELP=0
 
 while getopts "a:YNus:o:wnb:c:fl:m:Iivh" opt; do
@@ -274,6 +277,9 @@ case $opt in
       ;;
   m)
       JOBW_MORE="$OPTARG"
+      ;;
+  d)
+      JOBW_INTERACT=0
       ;;
   \?)
     echo "Invalid option: $OPTARG" >&2
@@ -397,6 +403,10 @@ JOBW_JOB_PID=`cat $JOBW_TMP_FILE.pid`
 ( cat $JOBW_TMP_FILE.stdout | tee $JOBW_TMP_FILE.log $JOBW_TMP_FILE.abs ) &
 $SCRIPT_DIR/jjobw_guard $$ $JOBW_JOB_PID &
 while kill -0 $JOBW_JOB_PID > /dev/null ; do
+    if [ ! "JOBW_INTERACT" -eq "0" ]; then
+        sleep 1
+        continue;
+    fi
     if read JOBW_INTER_CMD ; then
         :
     else
