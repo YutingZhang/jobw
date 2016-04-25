@@ -62,8 +62,9 @@ function show_help() {
   if [ "$JOBW_LOG_IN_EMAIL" -gt "0" ]; then echo " (default)"
   else echo; fi
   echo
-  echo        "  -v                show version"
   echo        "  -d                disable interative command line"
+  echo
+  echo        "  -v                show version"
   echo        "  -h                show this help"
   echo
 }
@@ -215,7 +216,7 @@ JOBW_INTERACT=1
 
 JOBW_SHOW_HELP=0
 
-while getopts "a:YNus:o:wnb:c:fl:m:Iivh" opt; do
+while getopts "a:YNus:o:wnb:c:fl:m:Iidvh" opt; do
 case $opt in
   v)
       echo "JOBW: version:" $JOBW_VERSION
