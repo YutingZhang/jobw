@@ -67,6 +67,9 @@ while true; do
         echo "...... [ "`date`" ] ...... [ Run ]"
         echo "[ $JOB_FOLDER_Q ]"
         mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
+        if [ "$?" != "0" ]; then
+            break;
+        fi
         trap "safe_int" 2
         JOBC_IS_CANCELED=0
         bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo $!`
