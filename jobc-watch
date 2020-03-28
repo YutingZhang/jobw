@@ -16,7 +16,7 @@ JOBC_IS_CANCELED=1
 }
 
 function safe_exit() {
-    touch $JOBC_VAR_DIR/INTERRUPTED
+    touch "$PROC_PREFIX.INTERRUPTED"
     exit 0
 }
 
@@ -42,8 +42,11 @@ mkdir -p "$JOBC_VAR_DIR/r"  # running
 mkdir -p "$JOBC_VAR_DIR/d"  # done
 mkdir -p "$JOBC_VAR_DIR/c"  # canceled
 
-rm -f $JOBC_VAR_DIR/INTERRUPTED
-rm -f $JOBC_VAR_DIR/DONE
+mkdir -p "$JOBC_VAR_DIR/proc"
+PROC_PREFIX="$JOBC_VAR_DIR/proc"/$$
+
+rm -f "$PROC_PREFIX.INTERRUPTED"
+rm -f "$JOBC_VAR_DIR/DONE"
 
 while true; do
     JOBCW_QUIT_ON_EMPTY=0
@@ -53,12 +56,12 @@ while true; do
     if [ -f "$JOBC_VAR_DIR/quit" ]; then
         break;
     fi
-    
-    JOBCW_QUEUE_EMPTY=1
+   
+    rm -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
 
     echo "...... [ "`date`" ] ...... [ List ]"
     ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
-        JOBCW_QUEUE_EMPTY=0
+        touch "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
 
         JOB_FOLDER_Q="$JOBC_VAR_DIR/q/$line"
         JOB_FOLDER_R="$JOBC_VAR_DIR/r/$line"
@@ -92,7 +95,7 @@ while true; do
     done
     
     trap 'safe_exit' 2
-    if [ "$JOBCW_QUEUE_EMPTY" -eq "1" ]; then
+    if [ ! -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY" ]; then
         if [ "$JOBCW_QUIT_ON_EMPTY" -ne "0" ]; then
             break;
         fi
