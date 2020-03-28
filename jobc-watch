@@ -42,8 +42,12 @@ mkdir -p "$JOBC_VAR_DIR/r"  # running
 mkdir -p "$JOBC_VAR_DIR/d"  # done
 mkdir -p "$JOBC_VAR_DIR/c"  # canceled
 
+EHTER_UUID=`ifconfig | grep ether | sha1sum | awk '{print $1}'`
+HD_UUID=`blkid | grep -oP 'UUID="\K[^"]+' | sha1sum | awk '{print $1}'`
+HOSTNAME=`hostname`
+
 mkdir -p "$JOBC_VAR_DIR/proc"
-PROC_PREFIX="$JOBC_VAR_DIR/proc"/$$
+PROC_PREFIX="$JOBC_VAR_DIR/proc"/HOSTNAME.EHTER_UUID.HD_UUID.$$
 
 rm -f "$PROC_PREFIX.INTERRUPTED"
 rm -f "$JOBC_VAR_DIR/DONE"
