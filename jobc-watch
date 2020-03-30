@@ -111,4 +111,5 @@ done
 
 touch $JOBC_VAR_DIR/DONE
 
+exit 0
 
