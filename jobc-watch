@@ -19,30 +19,24 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 function force_int() {
-
     echo
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${RED}Force killing the running job${NC} ]"
     kill -9 $JOBC_JOB_PID > /dev/null 2>&1
-
 }
 
 function safe_int() {
-
     echo
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Try to stop${NC} ]"
-    echo -e "...... [ [ ${LRED}To force killing, press ${WHITE}^C${LRED} again. ${NC} ]"
+    echo -e "...... [ ${LRED}To force killing, press ${WHITE}^C${LRED} again. ${NC} ]"
     kill -2 $JOBC_JOB_PID > /dev/null 2>&1
     trap "force_int" 2
-
 }
 
 function request_to_end() {
-
     touch "$PROC_PREFIX.REQUEST_TO_END"
     echo
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}User request to end${NC} ]"
-    echo -e "...... [ [ ${YELLOW}To interrupt the current process, press ${WHITE}^C${YELLOW} again. ${NC} ]"
-
+    echo -e "...... [ ${YELLOW}To interrupt the current process, press ${WHITE}^C${YELLOW} again. ${NC} ]"
 }
 
 function request_to_end_during_running() {
@@ -120,7 +114,7 @@ while true; do
         #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
         
         echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
-        echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}Run{$NC} ]"
+        echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}Run${NC} ]"
         echo -e "[ $JOB_FOLDER_Q ]"
         mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
         if [ "$?" != "0" ]; then
