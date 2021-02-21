@@ -18,33 +18,43 @@ LGRAY='\033[0;37m'
 WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
+
+# NOTE: 
+# when using trap "" 2 , ^C will NOT interrupt the current command as nothing need to happen
+# when using trap "function_name" 2, ^C will interrupt the current running command, as it has to interrupt it and run the specified function. 
+
 function force_int() {
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${RED}Force killing the running job${NC} ]"
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${RED}Force killing${NC} ]"
     kill -9 $JOBC_JOB_PID > /dev/null 2>&1
+    trap "" 2
 }
 
 function safe_int() {
-    trap "force_int" 2
+    trap "" 2
     echo
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Try to stop${NC} ]"
     echo -e "...... [ ${LRED}To force killing, press ${WHITE}^C${LRED} again. ${NC} ]"
     kill -2 $JOBC_JOB_PID > /dev/null 2>&1
+    trap "force_int" 2
 }
 
 function request_to_end() {
+    trap "" 2
     touch "$PROC_PREFIX.REQUEST_TO_END"
     echo
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LPURPLE}User request to end${NC} ]"
 }
 
 function request_to_end_during_running() {
-    trap "safe_int" 2
+    trap "" 2
     request_to_end
     echo -e "...... [ ${LPURPLE}To interrupt the current process, press ${WHITE}^C${LPURPLE} again. ${NC} ]"
+    trap "safe_int" 2
 }
 
 function safe_exit() {
+    trap "" 2
     touch "$PROC_PREFIX.INTERRUPTED"
     echo
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended by the user${NC} ]"
@@ -128,20 +138,23 @@ while true; do
         ( echo -e "[ ${DGRAY}"`date`"${NC} ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
             ( $SCRIPT_DIR/session_info | sed -e 's/^/\t/' ) ) >> $JOBC_VAR_DIR/log
         wait $JOBC_JOB_PID
-        wait $JOBC_JOB_PID  # in case requested interruption
-        wait $JOBC_JOB_PID  # in case requested force killing
+        wait $JOBC_JOB_PID  # if safe int happened
+        wait $JOBC_JOB_PID  # if force killing happened
+        wait $JOBC_JOB_PID
         JOBC_JOB_EC=$?
         
         trap "request_to_end" 2
         
         if [ "$JOBC_JOB_EC" -eq "0" ]; then
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/d"
-            ( echo -e "[ ${DGRAY}"`date`"${NC} ] [ "$JOBCW_ID" ]"$'\n'"  ${LGREEN}DONE:${NC}   $line" ; \
+            ( echo "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  DONE:   $line" ; \
                 ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
+            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LGREEN}Run${NC} ]"
         else
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/c"
-            ( echo -e "[ ${DGRAY}"`date`"${NC} ] [ "$JOBCW_ID" ]"$'\n'"  ${RED}CANCEL:${NC} $line" ; \
+            ( echo -e "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  CANCEL: $line" ; \
                 ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
+            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Interrupted${NC} ]"
         fi
 
     done
