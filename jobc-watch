@@ -42,7 +42,6 @@ function request_to_end_during_running() {
     trap "safe_int" 2
     request_to_end
     echo -e "...... [ ${LPURPLE}To interrupt the current process, press ${WHITE}^C${LPURPLE} again. ${NC} ]"
-    REQUESTED_TO_END=1
 }
 
 function safe_exit() {
@@ -122,7 +121,6 @@ while true; do
             break;
         fi
 
-        REQUESTED_TO_END=0
         trap "request_to_end_during_running" 2
 
         bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo $!`
@@ -130,9 +128,8 @@ while true; do
         ( echo -e "[ ${DGRAY}"`date`"${NC} ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
             ( $SCRIPT_DIR/session_info | sed -e 's/^/\t/' ) ) >> $JOBC_VAR_DIR/log
         wait $JOBC_JOB_PID
-        if [ "$REQUESTED_TO_END" -eq "1" ]; then
-            wait $JOBC_JOB_PID
-        fi
+        wait $JOBC_JOB_PID  # in case requested interruption
+        wait $JOBC_JOB_PID  # in case requested force killing
         JOBC_JOB_EC=$?
         
         trap "request_to_end" 2
