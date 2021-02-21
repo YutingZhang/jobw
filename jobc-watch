@@ -63,6 +63,7 @@ while true; do
    
     rm -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
 
+    echo "...... [ DIR PATH ] $JOBC_VAR_DIR"
     echo "...... [ "`date`" ] ...... [ List ]"
     ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
         touch "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
@@ -71,6 +72,7 @@ while true; do
         JOB_FOLDER_R="$JOBC_VAR_DIR/r/$line"
         #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
         
+        echo "...... [ DIR PATH ] $JOBC_VAR_DIR"
         echo "...... [ "`date`" ] ...... [ Run ]"
         echo "[ $JOB_FOLDER_Q ]"
         mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
@@ -100,7 +102,9 @@ while true; do
     
     trap 'safe_exit' 2
     if [ ! -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY" ]; then
+        echo "...... [ DIR PATH ] $JOBC_VAR_DIR"
         if [ "$JOBCW_QUIT_ON_EMPTY" -ne "0" ]; then
+            echo "...... [ "`date`" ] ...... [ End Watching Due to Empty Queue]"
             break;
         fi
         echo "...... [ "`date`" ] ...... [ Sleep for 10s ]"
