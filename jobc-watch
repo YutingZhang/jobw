@@ -107,8 +107,9 @@ while true; do
             echo "...... [ "`date`" ] ...... [ End Watching Due to Empty Queue]"
             break;
         fi
-        echo "...... [ "`date`" ] ...... [ Sleep for 10s ]"
-        sleep 10
+        SLEEP_TIME=$(($RANDOM % 10 + 5))
+        echo "...... [ "`date`" ] ...... [ Sleep for ${SLEEP_TIME}s ]"
+        sleep ${SLEEP_TIME}
     fi
 
 done
