@@ -33,7 +33,7 @@ function force_int() {
 function safe_int() {
     trap "" 2
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Try to stop${NC} ]"
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Try to interrupt${NC} ]"
     echo -e "...... [ ${LRED}To force killing, press ${WHITE}^C${LRED} again. ${NC} ]"
     kill -2 $JOBC_JOB_PID > /dev/null 2>&1
     trap "force_int" 2
