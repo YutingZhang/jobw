@@ -85,7 +85,7 @@ mkdir -p "$JOBC_VAR_DIR/c"  # canceled
 
 EHTER_UUID=`ifconfig | grep ether | sha1sum | awk '{print $1}'`
 if [ "$(uname)" == "Darwin" ]; then
-    HD_UUID=""
+    HD_UUID="mac_hd"
 else
     HD_UUID=`blkid | grep -oP 'UUID="\K[^"]+' | sha1sum | awk '{print $1}'`
 fi
