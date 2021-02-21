@@ -84,7 +84,11 @@ mkdir -p "$JOBC_VAR_DIR/d"  # done
 mkdir -p "$JOBC_VAR_DIR/c"  # canceled
 
 EHTER_UUID=`ifconfig | grep ether | sha1sum | awk '{print $1}'`
-HD_UUID=`blkid | grep -oP 'UUID="\K[^"]+' | sha1sum | awk '{print $1}'`
+if [ "$(uname)" == "Darwin" ]; then
+    HD_UUID=""
+else
+    HD_UUID=`blkid | grep -oP 'UUID="\K[^"]+' | sha1sum | awk '{print $1}'`
+fi
 HOSTNAME=`hostname`
 
 mkdir -p "$JOBC_VAR_DIR/proc"
