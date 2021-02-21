@@ -19,22 +19,41 @@ WHITE='\033[1;37m'
 NC='\033[0m' # No Color
 
 function force_int() {
-echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ Force killing ]"
-kill -9 $JOBC_JOB_PID > /dev/null 2>&1
+
+    echo
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${RED}Force killing the running job${NC} ]"
+    kill -9 $JOBC_JOB_PID > /dev/null 2>&1
+
 }
 
 function safe_int() {
 
-echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ Try to stop ]"
-kill -2 $JOBC_JOB_PID > /dev/null 2>&1
-trap "force_int" 2
+    echo
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Try to stop${NC} ]"
+    echo -e "...... [ [ ${LRED}To force killing, press ${WHITE}^C${LRED} again. ${NC} ]"
+    kill -2 $JOBC_JOB_PID > /dev/null 2>&1
+    trap "force_int" 2
 
-JOBC_IS_CANCELED=1
+}
 
+function request_to_end() {
+
+    touch "$PROC_PREFIX.REQUEST_TO_END"
+    echo
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}User request to end${NC} ]"
+    echo -e "...... [ [ ${YELLOW}To interrupt the current process, press ${WHITE}^C${YELLOW} again. ${NC} ]"
+
+}
+
+function request_to_end_during_running() {
+    request_to_end
+    trap "safe_int" 2
 }
 
 function safe_exit() {
     touch "$PROC_PREFIX.INTERRUPTED"
+    echo
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended by the user${NC} ]"
     exit 0
 }
 
@@ -67,8 +86,11 @@ HOSTNAME=`hostname`
 mkdir -p "$JOBC_VAR_DIR/proc"
 PROC_PREFIX="$JOBC_VAR_DIR/proc"/${HOSTNAME}.${EHTER_UUID}.${HD_UUID}.$$
 
+rm -f "$PROC_PREFIX.REQUEST_TO_END"
 rm -f "$PROC_PREFIX.INTERRUPTED"
 rm -f "$JOBC_VAR_DIR/DONE"
+
+trap 'safe_exit' 2
 
 while true; do
     JOBCW_QUIT_ON_EMPTY=0
@@ -84,6 +106,13 @@ while true; do
     echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${CYAN}List${NC} ]"
     ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
+
+        # the code in the block actually run only for one iteration
+
+        if [ -f "$PROC_PREFIX.REQUEST_TO_END" ]; then
+            safe_exit;
+        fi
+
         touch "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
 
         JOB_FOLDER_Q="$JOBC_VAR_DIR/q/$line"
@@ -97,14 +126,16 @@ while true; do
         if [ "$?" != "0" ]; then
             break;
         fi
-        trap "safe_int" 2
-        JOBC_IS_CANCELED=0
-        bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo -e $!`
+        trap "request_to_end_during_running" 2
+
+        bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo $!`
         
         ( echo -e "[ ${DGRAY}"`date`"${NC} ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
             ( $SCRIPT_DIR/session_info | sed -e 's/^/\t/' ) ) >> $JOBC_VAR_DIR/log
         wait $JOBC_JOB_PID
         JOBC_JOB_EC=$?
+        
+        trap "request_to_end" 2
         
         if [ "$JOBC_JOB_EC" -eq "0" ]; then
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/d"
@@ -118,11 +149,16 @@ while true; do
 
     done
     
+    if [ -f "$PROC_PREFIX.REQUEST_TO_END" ]; then
+        safe_exit
+    fi
+
     trap 'safe_exit' 2
+
     if [ ! -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY" ]; then
         echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
         if [ "$JOBCW_QUIT_ON_EMPTY" -ne "0" ]; then
-            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LPURPLE}End Watching Due to Empty Queue${NC} ]"
+            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended due to an empty queue${NC} ]"
             break;
         fi
         SLEEP_TIME=$(($RANDOM % 10 + 5))
