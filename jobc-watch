@@ -35,8 +35,8 @@ function safe_int() {
 function request_to_end() {
     touch "$PROC_PREFIX.REQUEST_TO_END"
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}User request to end${NC} ]"
-    echo -e "...... [ ${YELLOW}To interrupt the current process, press ${WHITE}^C${YELLOW} again. ${NC} ]"
+    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LPURPLE}User request to end${NC} ]"
+    echo -e "...... [ ${LPURPLE}To interrupt the current process, press ${WHITE}^C${LPURPLE} again. ${NC} ]"
 }
 
 function request_to_end_during_running() {
