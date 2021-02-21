@@ -67,15 +67,20 @@ pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
 
 if [ "$1" == "" ]; then
     echo "JOB-CLIENT WACTHER" >&2
-    echo "  "`basename "$0"`" JOBC_VAR_DIR JOBCW_ID" >&2
+    echo "  "`basename "$0"`" JOBC_VAR_DIR [JOBCW_ID [PROC_DIR]]" >&2
     exit 1
 fi
 
 JOBC_VAR_DIR="$1"
 
 JOBCW_ID="$2"
-if [ "$2" == "" ]; then
+if [ "$JOBCW_ID" == "" ]; then
     JOBCW_ID="unknown"
+fi
+
+PROC_DIR="$3"
+if [ "$PROC_DIR" == "" ]; then
+    PROC_DIR="$JOBC_VAR_DIR/proc"
 fi
 
 mkdir -p "$JOBC_VAR_DIR/q"  # queueing
@@ -91,8 +96,8 @@ else
 fi
 HOSTNAME=`hostname`
 
-mkdir -p "$JOBC_VAR_DIR/proc"
-PROC_PREFIX="$JOBC_VAR_DIR/proc"/${HOSTNAME}.${EHTER_UUID}.${HD_UUID}.$$
+mkdir -p "$PROC_DIR"
+PROC_PREFIX="$PROC_DIR"/${HOSTNAME}.${EHTER_UUID}.${HD_UUID}.$$
 
 rm -f "$PROC_PREFIX.REQUEST_TO_END"
 rm -f "$PROC_PREFIX.INTERRUPTED"
@@ -106,6 +111,8 @@ while true; do
         JOBCW_QUIT_ON_EMPTY=1
     fi
     if [ -f "$JOBC_VAR_DIR/quit" ]; then
+        trap "" 2
+        echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended per 'quit' tag ${NC} ]"
         break;
     fi
    
