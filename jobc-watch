@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 BLACK='\033[0;30m'
 DGRAY='\033[1;30m'

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 printf 'Hostname:\t%s\n' "`hostname`"
 printf 'User:\t%s\n' "`whoami`"

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 JOBW_PPID=$1
 JOBW_PID=$2
