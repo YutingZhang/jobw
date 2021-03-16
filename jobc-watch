@@ -120,7 +120,9 @@ while true; do
 
     echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${CYAN}List${NC} ]"
-    ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
+    # ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
+    # use unordered ls to speed up, and shuf to reduce race condition
+    ls -1U $JOBC_VAR_DIR/q | shuf | head -n1 | while read line ; do
 
         # the code in the block actually run only for one iteration
 
