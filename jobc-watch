@@ -162,7 +162,7 @@ while true; do
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/d"
             ( echo "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  DONE:   $line" ; \
                 ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
-            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LGREEN}Run${NC} ]"
+            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LGREEN}Done${NC} ]"
         else
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/c"
             ( echo -e "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  CANCEL: $line" ; \
