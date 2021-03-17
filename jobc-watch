@@ -122,7 +122,7 @@ while true; do
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${CYAN}List${NC} ]"
     # ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
     # use unordered ls to speed up, and shuf to reduce race condition
-    ls -1U $JOBC_VAR_DIR/q | shuf | head -n1 | while read line ; do
+    ls -1U $JOBC_VAR_DIR/q | sort | head -n32 | shuf | head -n1 | while read line ; do
 
         # the code in the block actually run only for one iteration
 
@@ -141,14 +141,15 @@ while true; do
         echo -e "[ $JOB_FOLDER_Q ]"
         mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
         if [ "$?" != "0" ]; then
-            break;
+            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LCYAN}Taken by another worker${NC} ]"
+            contiue;
         fi
 
         trap "request_to_end_during_running" 2
 
         bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo $!`
         
-        ( echo -e "[ ${DGRAY}"`date`"${NC} ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
+        ( echo -e "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
             ( $SCRIPT_DIR/session_info | sed -e 's/^/\t/' ) ) >> $JOBC_VAR_DIR/log
         wait $JOBC_JOB_PID
         wait $JOBC_JOB_PID  # if safe int happened

@@ -12,8 +12,10 @@ JOBC_JOB_FILE="$2"
 if [ "$JOBC_JOB_FILE" == "" ]; then
     JOBC_JOB_FILE="default"
 fi
+
+TIME_STAMP=$(printf '%015d' "$(date "+%s")")
 JOBC_JOB_FILE=`echo "$JOBC_JOB_FILE" | sed -e 's/\//_/g'`
-JOBC_JOB_FILE="$JOBC_JOB_FILE".`date "+%s"`.$$.$RANDOM
+JOBC_JOB_FILE="$TIME_STAMP"."$JOBC_JOB_FILE".$$.$RANDOM
 JOBC_TMP_FILE="/tmp/jobc/$JOBC_JOB_FILE";
 
 mkdir -p /tmp/jobc
