@@ -80,7 +80,8 @@ function safe_exit() {
 function stage_more_files() {
     num_to_stage=$((${TARGET_NUM_STAGED_FILES} - ${num_staged}))
     if [[ "$num_to_stage" -gt 0 ]]; then
-        ( cd "$JOBC_VAR_DIR"/q ; ls -U | sort | head -n"${num_to_stage}" | xargs -I '{}' mv '{}' "$JOBC_VAR_DIR/qs" 2>/dev/null )
+        # echo -e "...... [ ${BROWN}"STAGE"${NC} ] ...... [ ${LPURPLE}${num_to_stage}${NC} files ]" >&2
+        ( cd "$JOBC_VAR_DIR/q" || exit -1 ; ( ls -U | sort | head -n"${num_to_stage}" | xargs -I '{}' mv '{}' "$JOBC_VAR_DIR/qs" 2>/dev/null ) )
     fi
 }
 
@@ -89,13 +90,13 @@ function get_one_task_filename() {
     staged_filenames=($(ls -U "$JOBC_VAR_DIR/qs"))
     num_staged="${#staged_filenames[@]}"
     if [[ "${num_staged}" -eq 0 ]]; then
-        stage_more_files > /dev/null
+        stage_more_files
         staged_filenames=($(ls -U "$JOBC_VAR_DIR/qs"))
     elif [[ "${num_staged}" -le "$MINIMUM_NUM_STAGED_FILES" || "${num_staged}" -eq "$FILLING_NUM_STAGED_FILES" ]]; then
-        stage_more_files > /dev/null
+        stage_more_files
     fi
 
-    printf '%s\n' "${staged_filenames[@]}" | sort | head -n"${STAGE_SHUF_NUM}" | shuf | head -n1
+    printf '%s\n' "${staged_filenames[@]}" | sed '/^$/d' | sort | head -n"${STAGE_SHUF_NUM}" | shuf | head -n1
 }
 
 # main
@@ -115,7 +116,7 @@ CURRENT_DIR=$(pwd)
 cd "$JOBC_VAR_DIR" || exit -1
 JOBC_VAR_DIR=$(pwd -P)
 echo
-echo -e "${LGREEN}[JobC var dir]${NC}" "${LBLUE}${JOBC_VAR_DIR}${NC}"
+echo -e "...... ${LGREEN}[JobC var dir]${NC}" "${LBLUE}${JOBC_VAR_DIR}${NC}"
 echo
 cd "${CURRENT_DIR}"
 
@@ -180,7 +181,7 @@ while true; do
 
         touch "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
 
-        JOB_FOLDER_Q="$JOBC_VAR_DIR/q/$line"
+        JOB_FOLDER_Q="$JOBC_VAR_DIR/qs/$line"
         JOB_FOLDER_R="$JOBC_VAR_DIR/r/$line"
         #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
 
