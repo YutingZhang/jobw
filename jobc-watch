@@ -112,9 +112,11 @@ JOBC_VAR_DIR="$1"
 mkdir -p "${JOBC_VAR_DIR}"
 
 CURRENT_DIR=$(pwd)
-cd "$JOBC_VAR_DIR" || echo "Cannot create jobc var dir" >&2 | exit
+cd "$JOBC_VAR_DIR" || exit -1
 JOBC_VAR_DIR=$(pwd -P)
-echo "JobC var dir:" "${JOBC_VAR_DIR}"
+echo
+echo -e "${LGREEN}[JobC var dir]${NC}" "${LBLUE}${JOBC_VAR_DIR}${NC}"
+echo
 cd "${CURRENT_DIR}"
 
 JOBCW_ID="$2"
@@ -167,6 +169,7 @@ while true; do
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${CYAN}List${NC} ]"
     # ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
     # use unordered ls to speed up, and shuf to reduce race condition
+
     get_one_task_filename | while read line ; do
 
         # the code in the block actually run only for one iteration
