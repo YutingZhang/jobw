@@ -115,9 +115,6 @@ mkdir -p "${JOBC_VAR_DIR}"
 CURRENT_DIR=$(pwd)
 cd "$JOBC_VAR_DIR" || exit -1
 JOBC_VAR_DIR=$(pwd -P)
-echo
-echo -e "...... ${LGREEN}[JobC var dir]${NC}" "${LBLUE}${JOBC_VAR_DIR}${NC}"
-echo
 cd "${CURRENT_DIR}"
 
 JOBCW_ID="$2"
