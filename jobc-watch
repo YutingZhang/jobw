@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
 
+
+if [ -z "${TARGET_NUM_STAGED_FILES}" ]; then
+    TARGET_NUM_STAGED_FILES=2048
+fi
+if [ -z "${FILLING_NUM_STAGED_FILES}" ]; then
+    FILLING_NUM_STAGED_FILES=1024
+fi
+if [ -z "${MINIMUM_NUM_STAGED_FILES}" ]; then
+    MINIMUM_NUM_STAGED_FILES=512
+fi
+if [ -z "${STAGE_SHUF_NUM}" ]; then
+    STAGE_SHUF_NUM=32
+fi
+
+
 BLACK='\033[0;30m'
 DGRAY='\033[1;30m'
 RED='\033[0;31m'
@@ -61,6 +76,28 @@ function safe_exit() {
     exit 0
 }
 
+
+function stage_more_files() {
+    num_to_stage=$((${TARGET_NUM_STAGED_FILES} - ${num_staged}))
+    if [[ "$num_to_stage" -gt 0 ]]; then
+        ( cd "$JOBC_VAR_DIR"/q ; ls -U | sort | head -n"${num_to_stage}" | xargs -I '{}' mv '{}' "$JOBC_VAR_DIR/qs" 2>/dev/null )
+    fi
+}
+
+
+function get_one_task_filename() {
+    staged_filenames=($(ls -U "$JOBC_VAR_DIR/qs"))
+    num_staged="${#staged_filenames[@]}"
+    if [[ "${num_staged}" -eq 0 ]]; then
+        stage_more_files > /dev/null
+        staged_filenames=($(ls -U "$JOBC_VAR_DIR/qs"))
+    elif [[ "${num_staged}" -le "$MINIMUM_NUM_STAGED_FILES" || "${num_staged}" -eq "$FILLING_NUM_STAGED_FILES" ]]; then
+        stage_more_files > /dev/null
+    fi
+
+    printf '%s\n' "${staged_filenames[@]}" | sort | head -n"${STAGE_SHUF_NUM}" | shuf | head -n1
+}
+
 # main
 
 pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
@@ -72,6 +109,13 @@ if [ "$1" == "" ]; then
 fi
 
 JOBC_VAR_DIR="$1"
+mkdir -p "${JOBC_VAR_DIR}"
+
+CURRENT_DIR=$(pwd)
+cd "$JOBC_VAR_DIR" || echo "Cannot create jobc var dir" >&2 | exit
+JOBC_VAR_DIR=$(pwd -P)
+echo "JobC var dir:" "${JOBC_VAR_DIR}"
+cd "${CURRENT_DIR}"
 
 JOBCW_ID="$2"
 if [ "$JOBCW_ID" == "" ]; then
@@ -84,6 +128,7 @@ if [ "$PROC_DIR" == "" ]; then
 fi
 
 mkdir -p "$JOBC_VAR_DIR/q"  # queueing
+mkdir -p "$JOBC_VAR_DIR/qs"  # the short list for tasks going to be executed
 mkdir -p "$JOBC_VAR_DIR/r"  # running
 mkdir -p "$JOBC_VAR_DIR/d"  # done
 mkdir -p "$JOBC_VAR_DIR/c"  # canceled
@@ -122,7 +167,7 @@ while true; do
     echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${CYAN}List${NC} ]"
     # ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
     # use unordered ls to speed up, and shuf to reduce race condition
-    ls -1U $JOBC_VAR_DIR/q | sort | head -n32 | shuf | head -n1 | while read line ; do
+    get_one_task_filename | while read line ; do
 
         # the code in the block actually run only for one iteration
 
@@ -135,7 +180,7 @@ while true; do
         JOB_FOLDER_Q="$JOBC_VAR_DIR/q/$line"
         JOB_FOLDER_R="$JOBC_VAR_DIR/r/$line"
         #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
-        
+
         echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
         echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}Run${NC} ]"
         echo -e "[ $JOB_FOLDER_Q ]"

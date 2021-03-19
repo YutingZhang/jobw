@@ -14,7 +14,7 @@ if [ "$JOBC_JOB_FILE" == "" ]; then
 fi
 
 TIME_STAMP=$(printf '%015d' "$(date "+%s")")
-JOBC_JOB_FILE=`echo "$JOBC_JOB_FILE" | sed -e 's/\//_/g'`
+JOBC_JOB_FILE=$(echo "$JOBC_JOB_FILE" | sed -e 's/\//_/g')
 JOBC_JOB_FILE="$TIME_STAMP"."$JOBC_JOB_FILE".$$.$RANDOM
 JOBC_TMP_FILE="/tmp/jobc/$JOBC_JOB_FILE";
 
@@ -24,7 +24,7 @@ mkdir -p "$JOBC_VAR_DIR/q"  # queueing
 echo "......... [PLEASE INPUT SCRIPT]"
 cat > $JOBC_TMP_FILE
 
-JOBC_CAT_EC=`echo $?`
+JOBC_CAT_EC=$(echo $?)
 if [ "$JOBC_CAT_EC" -eq "0" ]; then
     mv "$JOBC_TMP_FILE" "$JOBC_VAR_DIR/q/$JOBC_JOB_FILE"
     echo "......... [ADDED TO QUEUE]"
