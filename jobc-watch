@@ -188,7 +188,7 @@ while true; do
         mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
         if [ "$?" != "0" ]; then
             echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LCYAN}Taken by another worker${NC} ]"
-            contiue;
+            continue
         fi
 
         trap "request_to_end_during_running" 2
