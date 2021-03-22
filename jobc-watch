@@ -40,7 +40,7 @@ NC='\033[0m' # No Color
 
 function force_int() {
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${RED}Force killing${NC} ]"
+    echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${RED}Force killing${NC} ]"
     kill -9 $JOBC_JOB_PID > /dev/null 2>&1
     trap "" 2
 }
@@ -48,7 +48,7 @@ function force_int() {
 function safe_int() {
     trap "" 2
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Try to interrupt${NC} ]"
+    echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${LRED}Try to interrupt${NC} ]"
     echo -e "...... [ ${LRED}To force killing, press ${WHITE}^C${LRED} again. ${NC} ]"
     kill -2 $JOBC_JOB_PID > /dev/null 2>&1
     trap "force_int" 2
@@ -58,7 +58,7 @@ function request_to_end() {
     trap "" 2
     touch "$PROC_PREFIX.REQUEST_TO_END"
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LPURPLE}User request to end${NC} ]"
+    echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${LPURPLE}User request to end${NC} ]"
 }
 
 function request_to_end_during_running() {
@@ -72,7 +72,7 @@ function safe_exit() {
     trap "" 2
     touch "$PROC_PREFIX.INTERRUPTED"
     echo
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended by the user${NC} ]"
+    echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${PURPLE}Ended by the user${NC} ]"
     exit 0
 }
 
@@ -101,7 +101,7 @@ function get_one_task_filename() {
 
 # main
 
-pushd `dirname $0` > /dev/null ; SCRIPT_DIR="`pwd`"; popd > /dev/null
+pushd `dirname $0` > /dev/null || exit ; SCRIPT_DIR="$(pwd)"; popd > /dev/null || exit
 
 if [ "$1" == "" ]; then
     echo "JOB-CLIENT WACTHER" >&2
@@ -157,14 +157,14 @@ while true; do
     fi
     if [ -f "$JOBC_VAR_DIR/quit" ]; then
         trap "" 2
-        echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended per 'quit' tag ${NC} ]"
+        echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${PURPLE}Ended per 'quit' tag ${NC} ]"
         break;
     fi
    
     rm -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY"
 
     echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
-    echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${CYAN}List${NC} ]"
+    echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${CYAN}List${NC} ]"
     # ls -tr $JOBC_VAR_DIR/q | head -n1 | while read line ; do
     # use unordered ls to speed up, and shuf to reduce race condition
 
@@ -183,11 +183,11 @@ while true; do
         #JOB_FOLDER_D="$JOBC_VAR_DIR/d/$line"
 
         echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
-        echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${YELLOW}Run${NC} ]"
+        echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${YELLOW}Run${NC} ]"
         echo -e "[ $JOB_FOLDER_Q ]"
         mv "$JOB_FOLDER_Q" "$JOBC_VAR_DIR/r"
         if [ "$?" != "0" ]; then
-            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LCYAN}Taken by another worker${NC} ]"
+            echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${LCYAN}Taken by another worker${NC} ]"
             continue
         fi
 
@@ -195,10 +195,10 @@ while true; do
 
         bash "$JOB_FOLDER_R" & JOBC_JOB_PID=`echo $!`
         
-        ( echo -e "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
+        ( echo -e "[ $(date) ] [ "$JOBCW_ID" ]"$'\n'"  START:  $line" ; \
             ( $SCRIPT_DIR/session_info | sed -e 's/^/\t/' ) ) >> $JOBC_VAR_DIR/log
         wait $JOBC_JOB_PID
-        wait $JOBC_JOB_PID  # if safe int happened
+        wait $JOBC_JOB_PID  # if safe int happened, wait will get killed if trap is not set to empty
         wait $JOBC_JOB_PID  # if force killing happened
         wait $JOBC_JOB_PID
         JOBC_JOB_EC=$?
@@ -207,14 +207,14 @@ while true; do
         
         if [ "$JOBC_JOB_EC" -eq "0" ]; then
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/d"
-            ( echo "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  DONE:   $line" ; \
+            ( echo "[ $(date) ] [ "$JOBCW_ID" ]"$'\n'"  DONE:   $line" ; \
                 ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
-            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LGREEN}Done${NC} ]"
+            echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${LGREEN}Done${NC} ]"
         else
             mv "$JOB_FOLDER_R" "$JOBC_VAR_DIR/c"
-            ( echo -e "[ "`date`" ] [ "$JOBCW_ID" ]"$'\n'"  CANCEL: $line" ; \
+            ( echo -e "[ $(date) ] [ "$JOBCW_ID" ]"$'\n'"  CANCEL: $line" ; \
                 ( $SCRIPT_DIR/session_info | sed -e 's/^/    /' ) ) >> $JOBC_VAR_DIR/log
-            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${LRED}Interrupted${NC} ]"
+            echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${LRED}Interrupted${NC} ]"
         fi
 
     done
@@ -228,11 +228,11 @@ while true; do
     if [ ! -f "${PROC_PREFIX}.JOBCW_QUEUE_NONEMPTY" ]; then
         echo -e "...... [ ${LBLUE}DIR PATH${NC} ] $JOBC_VAR_DIR"
         if [ "$JOBCW_QUIT_ON_EMPTY" -ne "0" ]; then
-            echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${PURPLE}Ended due to an empty queue${NC} ]"
+            echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${PURPLE}Ended due to an empty queue${NC} ]"
             break;
         fi
         SLEEP_TIME=$(($RANDOM % 10 + 5))
-        echo -e "...... [ ${DGRAY}"`date`"${NC} ] ...... [ ${BROWN}Sleep for ${SLEEP_TIME}s${NC} ]"
+        echo -e "...... [ ${DGRAY}$(date)${NC} ] ...... [ ${BROWN}Sleep for ${SLEEP_TIME}s${NC} ]"
         sleep ${SLEEP_TIME}
     fi
 
